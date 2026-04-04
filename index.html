@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magniscreen MRI Registry Prep</title>
+<script>
+(() => {
+  const storedTheme = localStorage.getItem('ms_theme_mode') || 'dark';
+  const storedAccent = localStorage.getItem('ms_theme_accent') || 'teal';
+  document.documentElement.setAttribute('data-theme', storedTheme);
+  document.documentElement.setAttribute('data-accent', storedAccent);
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">
+          <img src="logo.png" alt="Magniscreen" class="brand-logo">
+        </div>
+        <div>
+          <div class="eyebrow">MRI Registry Prep</div>
+          <div class="logo">MAGNI<span>SCREEN</span></div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <button onclick="showView('study')" id="nav-study" class="active">Study</button>
+        <button onclick="showView('flashcards')" id="nav-flashcards">Flashcards</button>
+        <button onclick="showView('review')" id="nav-review">Review</button>
+        <button onclick="showView('test')" id="nav-test">Test</button>
+        <button onclick="showView('dashboard')" id="nav-dashboard">Dashboard</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <div class="status-pill" id="question-count-pill">Loading questions...</div>
+        <button class="icon-btn" id="settings-trigger" type="button" aria-haspopup="dialog" aria-controls="settings-panel" aria-expanded="false">
+          <span class="icon-btn-symbol">◐</span>
+          <span>Theme</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero card" id="hero-section">
+        <div class="hero-head">
+          <div class="hero-head-copy">
+            <div class="hero-kicker" id="hero-mode-title">Study overview</div>
+            <div class="inline-note" id="hero-mode-note">Quick orientation for first-time learners</div>
+          </div>
+          <button class="btn btn-secondary btn-small hidden" type="button" id="hero-overview-toggle">Collapse overview</button>
+        </div>
+        <div class="hero-top" id="hero-overview-panel">
+          <div class="hero-copy">
+            <div class="hero-kicker">Local-first, focused, and personalized</div>
+            <h1>Premium MRI registry prep without changing the study workflow you already know.</h1>
+            <p>Switch between guided study, timed testing, and a progress dashboard while keeping your themes, accents, and performance data saved on this device.</p>
+          </div>
+          <div class="exam-overview-card">
+            <div class="exam-overview-head">
+              <div>
+                <div class="section-eyebrow">ARRT MRI Exam Overview</div>
+                <h2>Built around the same four content areas tested on the exam.</h2>
+              </div>
+              <div class="exam-overview-total">
+                <strong>200</strong>
+                <span>Scored Questions</span>
+              </div>
+            </div>
+            <p class="exam-overview-copy">The ARRT MRI exam is organized into four major content areas, and this app follows those same domains to help you focus your studying where it matters most.</p>
+            <div class="exam-breakdown">
+              <div class="exam-breakdown-item"><span>Patient Care</span><strong>16</strong></div>
+              <div class="exam-breakdown-item"><span>Safety</span><strong>21</strong></div>
+              <div class="exam-breakdown-item"><span>Image Production</span><strong>106</strong></div>
+              <div class="exam-breakdown-item"><span>Procedures</span><strong>57</strong></div>
+            </div>
+            <div class="exam-overview-foot">
+              <div class="exam-overview-note">Additional unscored pilot questions: <strong>30</strong></div>
+              <a
+                class="btn btn-secondary exam-overview-link"
+                href="https://assets-us-01.kc-usercontent.com/406ac8c6-58e8-00b3-e3c1-0c312965deb2/8a6d78b2-c8bf-4a57-b824-85a9bc5a98e5/Magnetic%20Resonance%20Imaging%20Content%20Specifications%202025.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >View ARRT Content Specifications PDF</a>
+            </div>
+          </div>
+        </div>
+        <div class="hero-metrics" id="hero-metrics">
+          <div class="metric-card">
+            <div class="metric-label">Question Bank</div>
+            <div class="metric-value" id="hero-total-questions">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Sessions Saved</div>
+            <div class="metric-value" id="hero-total-sessions">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Questions Attempted</div>
+            <div class="metric-value" id="hero-total-attempted">0</div>
+          </div>
+        </div>
+      </section>
+
+      <div id="view-study" class="view-stack">
+        <div id="study-setup" class="card">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow">Learning mode</div>
+              <h2>Study Mode</h2>
+            </div>
+            <p>Choose a focus area and answer questions one at a time with immediate rationale feedback.</p>
+          </div>
+
+          <div class="setup-grid">
+            <div class="setup-section">
+              <h3>Filter by Domain</h3>
+              <div class="filter-row" id="domain-filters"></div>
+            </div>
+
+            <div class="setup-section">
+              <h3>Filter by Subcategory</h3>
+              <div class="filter-row" id="sub-filters"></div>
+            </div>
+
+            <div class="setup-section">
+              <h3>Focused Review</h3>
+              <div class="focus-grid">
+                <label class="field">
+                  <span>Status</span>
+                  <select id="study-status-filter"></select>
+                </label>
+                <label class="field">
+                  <span>Flag Type</span>
+                  <select id="study-flag-filter"></select>
+                </label>
+                <div class="field field-action">
+                  <span>Quick Review</span>
+                  <button class="btn btn-secondary" type="button" id="review-flagged-btn">Review Flagged</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <label class="field">
+              <span>Questions</span>
+              <select id="study-count">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="0">All available</option>
+              </select>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="study-shuffle" checked>
+              <span>Shuffle questions</span>
+            </label>
+            <button class="btn btn-primary" onclick="startStudy()">Start Studying</button>
+            <button class="btn btn-secondary" type="button" id="save-study-preset-btn">Save Preset</button>
+            <div class="inline-note" id="available-count"></div>
+          </div>
+        </div>
+
+        <div id="study-active" class="hidden">
+          <div class="score-bar">
+            <div class="stat">
+              <span class="num green" id="s-correct">0</span>
+              <span>Correct</span>
+            </div>
+            <div class="sep"></div>
+            <div class="stat">
+              <span class="num red" id="s-wrong">0</span>
+              <span>Wrong</span>
+            </div>
+            <div class="sep"></div>
+            <div class="stat">
+              <span class="pct" id="s-pct">0%</span>
+              <span>Accuracy</span>
+            </div>
+            <div class="spacer"></div>
+            <div class="stat stat-muted">
+              <span id="s-progress">0/0</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="question-meta">
+              <div class="q-id-badge" id="s-qid"></div>
+              <div class="q-counter" id="s-spec"></div>
+            </div>
+            <div class="study-toolbar">
+              <div class="toolbar-group">
+                <button class="btn btn-secondary btn-small flag-action-btn" type="button" id="toggle-flags-btn">Flags</button>
+                <button class="btn btn-secondary btn-small helper-action-btn" type="button" id="help-search-btn">Help Me Search</button>
+                <button class="btn btn-secondary btn-small helper-action-btn helper-action-btn-premium hidden" type="button" id="ask-chatgpt-btn">Ask ChatGPT</button>
+              </div>
+              <div class="flag-preview" id="active-flag-preview"></div>
+            </div>
+            <div class="flag-panel hidden" id="flag-panel">
+              <div class="flag-chip-row" id="flag-chip-row"></div>
+            </div>
+            <div class="q-stem" id="s-stem"></div>
+            <div class="options" id="s-options"></div>
+            <div id="s-rationale" class="hidden"></div>
+            <div class="confidence-panel hidden" id="confidence-panel">
+              <div class="confidence-label">How did that feel?</div>
+              <div class="confidence-actions">
+                <button class="btn btn-secondary btn-small confidence-btn" type="button" data-confidence="Confident">Confident</button>
+                <button class="btn btn-secondary btn-small confidence-btn" type="button" data-confidence="Unsure">Unsure</button>
+                <button class="btn btn-secondary btn-small confidence-btn" type="button" data-confidence="Guessed">Guessed</button>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary hidden" id="s-next" onclick="nextStudyQ()">Next Question →</button>
+              <button class="btn btn-secondary" onclick="endStudy()">End Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="study-summary" class="hidden">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <div class="section-eyebrow">Wrap-up</div>
+                <h2>Session Complete</h2>
+              </div>
+            </div>
+            <div class="stats-grid" id="sum-stats"></div>
+            <div class="session-insight" id="study-summary-insight"></div>
+            <h3>Results by Subcategory</h3>
+            <div class="table-wrap">
+              <table class="summary-table" id="sum-table">
+                <thead>
+                  <tr><th>Subcategory</th><th>Correct</th><th>Total</th><th>%</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="reviewAllStudy()">Review All Questions</button>
+              <button class="btn btn-secondary" onclick="reviewMissed()">Review Missed Only</button>
+              <button class="btn btn-secondary" onclick="showStudySetup()">New Session</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-test" class="view-stack hidden">
+        <div id="test-setup" class="card">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow">Timed simulation</div>
+              <h2>Test Mode</h2>
+            </div>
+            <p>Run a timed exam simulation with no rationales until you submit.</p>
+          </div>
+
+          <div class="control-row control-row-wrap">
+            <label class="field">
+              <span>Test Type</span>
+              <select id="test-type" onchange="updateTestInfo()">
+                <option value="mixed-25">Quick Mix (25 Qs, ~20 min)</option>
+                <option value="mixed-50">Half Exam (50 Qs, ~40 min)</option>
+                <option value="mixed-100">Full Practice (100 Qs, ~90 min)</option>
+                <option value="arrt-200">ARRT Mock Exam (200 Qs, 3 hrs)</option>
+                <option value="domain">Single Domain</option>
+              </select>
+            </label>
+
+            <label class="field hidden" id="test-domain-pick">
+              <span>Domain</span>
+              <select id="test-domain">
+                <option value="Image Production">Image Production</option>
+                <option value="Procedures">Procedures</option>
+                <option value="Safety">Safety</option>
+                <option value="Patient Care">Patient Care</option>
+              </select>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="test-timer-on" checked>
+              <span>Enable Timer</span>
+            </label>
+
+            <button class="btn btn-primary" onclick="startTest()">Begin Test</button>
+          </div>
+        </div>
+
+        <div id="test-active" class="hidden">
+          <div class="score-bar">
+            <div class="stat stat-muted">
+              <span>Question</span>
+              <span id="t-progress">1/50</span>
+            </div>
+            <div class="spacer"></div>
+            <div class="timer-group">
+              <div class="timer" id="t-timer">00:00</div>
+              <div class="timer-sub" id="t-countdown"></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="stat stat-muted">
+              <span id="t-answered">0</span>
+              <span>Answered</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="question-meta">
+              <div class="q-id-badge" id="t-qid"></div>
+            </div>
+            <div class="q-stem" id="t-stem"></div>
+            <div class="options" id="t-options"></div>
+            <div class="actions">
+              <button class="btn btn-secondary" id="t-prev" onclick="testNav(-1)" disabled>← Previous</button>
+              <button class="btn btn-secondary btn-small test-flag-btn" id="t-flag" type="button" onclick="toggleTestFlag()">☐ Flag for Review</button>
+              <button class="btn btn-primary" id="t-next" onclick="testNav(1)">Next →</button>
+              <div class="spacer"></div>
+              <button class="btn btn-danger" onclick="submitTest()">Submit Test</button>
+            </div>
+          </div>
+
+          <div class="card card-tight">
+            <div class="section-head compact">
+              <div>
+                <div class="section-eyebrow">Navigation</div>
+                <h3>Question Navigator</h3>
+              </div>
+            </div>
+            <div id="t-nav-grid" class="nav-grid"></div>
+          </div>
+        </div>
+
+        <div id="test-summary" class="hidden">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <div class="section-eyebrow">Results</div>
+                <h2>Test Summary</h2>
+              </div>
+            </div>
+            <div class="stats-grid" id="t-sum-stats"></div>
+            <div class="session-insight" id="test-summary-insight"></div>
+            <h3>Breakdown by Subcategory</h3>
+            <div class="table-wrap">
+              <table class="summary-table" id="t-sum-table">
+                <thead>
+                  <tr><th>Subcategory</th><th>Correct</th><th>Total</th><th>%</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="reviewAllTest()">Review All Questions</button>
+              <button class="btn btn-secondary" onclick="reviewTestMissed()">Review Missed Only</button>
+              <button class="btn btn-secondary" onclick="showTestSetup()">New Test</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="test-review" class="hidden">
+          <div class="score-bar">
+            <div class="stat stat-muted">
+              <span>Reviewing</span>
+              <span id="tr-progress">1/50</span>
+            </div>
+            <div class="sep"></div>
+            <div class="stat">
+              <span class="num green" id="tr-correct-count">0</span>
+              <span>Correct</span>
+            </div>
+            <div class="sep"></div>
+            <div class="stat">
+              <span class="num red" id="tr-wrong-count">0</span>
+              <span>Wrong</span>
+            </div>
+            <div class="spacer"></div>
+            <div class="stat stat-muted">
+              <span id="tr-status"></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="question-meta">
+              <div class="q-id-badge" id="tr-qid"></div>
+              <div class="q-counter" id="tr-spec"></div>
+            </div>
+            <div class="q-stem" id="tr-stem"></div>
+            <div class="options" id="tr-options"></div>
+            <div id="tr-rationale"></div>
+            <div class="actions">
+              <button class="btn btn-secondary" id="tr-prev" type="button" onclick="testReviewNav(-1)" disabled>← Previous</button>
+              <button class="btn btn-primary" id="tr-next" type="button" onclick="testReviewNav(1)">Next →</button>
+              <div class="spacer"></div>
+              <button class="btn btn-secondary" type="button" onclick="exitTestReview()">Back to Results</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-flashcards" class="view-stack hidden">
+        <div id="flashcard-setup" class="card compact-setup-card">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow">Active recall</div>
+              <h2>Flashcard Mode</h2>
+            </div>
+            <p>Build a low-pressure deck from the question bank, your current filters, or your own study signals.</p>
+          </div>
+
+          <div class="focus-grid compact-focus-grid vertical-setup-stack">
+            <label class="field">
+              <span>Deck Source</span>
+              <select id="flashcard-source">
+                <option value="all">All Questions</option>
+                <option value="filtered">Current Study Filters</option>
+                <option value="flagged">Flagged Questions</option>
+                <option value="missed">Missed Questions</option>
+                <option value="weak">Weak Areas</option>
+                <option value="high-yield">High Yield Flagged</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Cards</span>
+              <select id="flashcard-count">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="0">All available</option>
+              </select>
+            </label>
+            <label class="field toggle-field">
+              <span>Deck Options</span>
+              <label class="toggle">
+                <input type="checkbox" id="flashcard-shuffle" checked>
+                <span>Shuffle deck</span>
+              </label>
+            </label>
+            <label class="field">
+              <span>Domain</span>
+              <select id="flashcard-domain-filter"></select>
+            </label>
+            <label class="field">
+              <span>Subcategory</span>
+              <select id="flashcard-sub-filter"></select>
+            </label>
+          </div>
+
+          <div class="control-row compact-control-row vertical-setup-actions">
+            <button class="btn btn-primary" type="button" id="start-flashcards-btn">Start Flashcards</button>
+            <button class="btn btn-secondary" type="button" id="restart-flashcards-btn">Restart Last Deck</button>
+            <button class="btn btn-secondary" type="button" id="save-flashcards-preset-btn">Save Preset</button>
+            <div class="inline-note" id="flashcard-available-count"></div>
+          </div>
+        </div>
+
+        <div id="flashcard-active" class="hidden">
+          <div class="score-bar">
+            <div class="stat stat-muted"><span id="flashcard-progress">1/25</span><span>Card</span></div>
+            <div class="sep"></div>
+            <div class="stat stat-muted"><span id="flashcard-source-label">Filtered</span><span>Deck</span></div>
+            <div class="sep"></div>
+            <div class="stat stat-muted"><span id="flashcard-phase-label">Prompt</span><span>Stage</span></div>
+            <div class="spacer"></div>
+            <div class="stat stat-muted"><span>Keyboard:</span><span>Space flip, ←/→ move</span></div>
+          </div>
+
+          <div class="card flashcard-shell">
+            <div class="flashcard-meta">
+              <div class="q-id-badge" id="flashcard-domain"></div>
+              <div class="q-counter" id="flashcard-subcategory"></div>
+            </div>
+            <div class="study-toolbar flashcard-help-toolbar" id="flashcard-help-toolbar">
+              <div class="toolbar-group">
+                <button class="btn btn-secondary btn-small helper-action-btn" type="button" id="flashcard-search-btn">Google Search</button>
+                <button class="btn btn-secondary btn-small helper-action-btn helper-action-btn-premium" type="button" id="flashcard-chatgpt-btn">Ask ChatGPT</button>
+              </div>
+            </div>
+            <div class="flashcard-stage" id="flashcard-card">
+              <div class="flashcard-face">
+                <div class="flashcard-face-label">Prompt</div>
+                <div class="flashcard-copy" id="flashcard-front"></div>
+              </div>
+              <div class="flashcard-answer-block hidden" id="flashcard-answer-block">
+                <div class="flashcard-face-label">Answer</div>
+                <div class="flashcard-answer" id="flashcard-answer"></div>
+              </div>
+              <div class="flashcard-explanation-block hidden" id="flashcard-explanation-block">
+                <div class="flashcard-face-label">Explanation</div>
+                <div class="flashcard-copy" id="flashcard-rationale"></div>
+                <div class="review-takeaway" id="flashcard-takeaway"></div>
+                <div class="review-reference" id="flashcard-reference"></div>
+              </div>
+            </div>
+            <div class="confidence-panel hidden" id="flashcard-rating-panel">
+              <div class="confidence-label">How well do you know this one?</div>
+              <div class="confidence-actions">
+                <button class="btn btn-secondary btn-small flashcard-rating-btn" type="button" data-rating="Know it">Know it</button>
+                <button class="btn btn-secondary btn-small flashcard-rating-btn" type="button" data-rating="Shaky">Shaky</button>
+                <button class="btn btn-secondary btn-small flashcard-rating-btn" type="button" data-rating="Missed">Missed</button>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" type="button" id="flashcard-prev-btn">← Previous</button>
+              <button class="btn btn-secondary" type="button" id="flashcard-reveal-btn">Show Answer</button>
+              <button class="btn btn-primary" type="button" id="flashcard-next-btn">Next →</button>
+              <div class="spacer"></div>
+              <button class="btn btn-secondary" type="button" id="flashcard-end-btn">End Deck</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="flashcard-summary" class="hidden">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <div class="section-eyebrow">Wrap-up</div>
+                <h2>Flashcard Session Complete</h2>
+              </div>
+            </div>
+            <div class="stats-grid" id="flashcard-summary-stats"></div>
+            <div class="session-insight" id="flashcard-summary-insight"></div>
+            <div class="actions">
+              <button class="btn btn-primary" type="button" id="flashcard-summary-restart-btn">Restart Deck</button>
+              <button class="btn btn-secondary" type="button" id="flashcard-summary-new-btn">New Deck</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-review" class="view-stack hidden">
+        <div id="review-setup" class="card compact-setup-card">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow">Passive study</div>
+              <h2>Quick Review</h2>
+            </div>
+            <p>Browse calm, distilled concept cards built from existing question rationales and your local study history.</p>
+          </div>
+
+          <div class="focus-grid compact-focus-grid vertical-setup-stack">
+            <label class="field">
+              <span>Review Source</span>
+              <select id="review-source">
+                <option value="filtered">Current Study Filters</option>
+                <option value="flagged">Flagged Questions</option>
+                <option value="missed">Missed Questions</option>
+                <option value="weak">Weak Areas</option>
+                <option value="high-yield">High Yield Flagged</option>
+                <option value="all">All Questions</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Cards</span>
+              <select id="review-count">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="0">All available</option>
+              </select>
+            </label>
+            <label class="field toggle-field">
+              <span>Deck Options</span>
+              <label class="toggle">
+                <input type="checkbox" id="review-shuffle">
+                <span>Shuffle cards</span>
+              </label>
+            </label>
+            <label class="field">
+              <span>Domain</span>
+              <select id="review-domain-filter"></select>
+            </label>
+            <label class="field">
+              <span>Subcategory</span>
+              <select id="review-sub-filter"></select>
+            </label>
+          </div>
+
+          <div class="control-row compact-control-row vertical-setup-actions">
+            <button class="btn btn-primary" type="button" id="start-review-btn">Start Review</button>
+            <button class="btn btn-secondary" type="button" id="save-review-preset-btn">Save Preset</button>
+            <div class="inline-note" id="review-available-count"></div>
+          </div>
+        </div>
+
+        <div id="review-active" class="hidden">
+          <div class="score-bar">
+            <div class="stat stat-muted"><span id="review-progress">1/10</span><span>Card</span></div>
+            <div class="spacer"></div>
+            <div class="stat stat-muted"><span id="review-source-label">Filtered</span><span>Source</span></div>
+          </div>
+
+          <div class="card review-card">
+            <div class="review-kicker" id="review-kicker"></div>
+            <div class="study-toolbar">
+              <div class="toolbar-group">
+                <button class="btn btn-secondary btn-small helper-action-btn" type="button" id="review-search-btn">Google Search</button>
+                <button class="btn btn-secondary btn-small helper-action-btn helper-action-btn-premium" type="button" id="review-chatgpt-btn">Ask ChatGPT</button>
+              </div>
+            </div>
+            <h3 id="review-title"></h3>
+            <p class="review-summary" id="review-card-summary"></p>
+            <div class="review-takeaway" id="review-takeaway"></div>
+            <div class="review-answer" id="review-answer"></div>
+            <div class="review-reference" id="review-reference"></div>
+            <div class="actions">
+              <button class="btn btn-secondary" type="button" id="review-prev-btn">← Previous</button>
+              <button class="btn btn-primary" type="button" id="review-next-btn">Next →</button>
+              <div class="spacer"></div>
+              <button class="btn btn-secondary" type="button" id="review-flag-highyield-btn">Mark High Yield</button>
+              <button class="btn btn-secondary" type="button" id="review-end-btn">End Review</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="review-summary" class="hidden">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <div class="section-eyebrow">Wrap-up</div>
+                <h2>Review Session Complete</h2>
+              </div>
+            </div>
+            <div class="stats-grid" id="review-summary-stats"></div>
+            <div class="session-insight" id="review-summary-insight"></div>
+            <div class="actions">
+              <button class="btn btn-primary" type="button" id="review-summary-restart-btn">Restart Review</button>
+              <button class="btn btn-secondary" type="button" id="review-summary-new-btn">New Review</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-dashboard" class="view-stack hidden">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow">Performance overview</div>
+              <h2>Progress Dashboard</h2>
+            </div>
+            <p>Your saved progress remains local to this browser.</p>
+          </div>
+          <div class="stats-grid" id="dash-stats"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Personalized insights</div>
+              <h2>Weak Areas</h2>
+            </div>
+          </div>
+          <div class="stats-grid" id="dash-weak-stats"></div>
+          <div id="dash-weak-list" class="weak-list"></div>
+          <div class="actions">
+            <button class="btn btn-primary" type="button" id="dash-weak-study-btn">Study Weak Areas</button>
+            <button class="btn btn-secondary" type="button" id="dash-weak-flashcards-btn">Weak Flashcards</button>
+            <button class="btn btn-secondary" type="button" id="dash-weak-review-btn">Weak Review</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Repeatable setups</div>
+              <h2>Saved Presets</h2>
+            </div>
+          </div>
+          <p class="inline-note">Save favorite study setups and reload them later without rebuilding your filters by hand.</p>
+          <div id="preset-list" class="preset-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Study cues</div>
+              <h2>Flagged Questions</h2>
+            </div>
+          </div>
+          <div class="stats-grid" id="dash-flags"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Quick start</div>
+              <h2>How to Use</h2>
+            </div>
+          </div>
+          <div class="help-list">
+            <div class="help-item"><strong>Study</strong><span>Answer one question at a time with immediate rationale, flags, Google Search, and Ask ChatGPT support.</span></div>
+            <div class="help-item"><strong>Test</strong><span>Run a timed practice block without study aids so you can simulate exam conditions.</span></div>
+            <div class="help-item"><strong>Flashcards</strong><span>Review concepts in a lower-pressure format, then rate cards as Know it, Shaky, or Missed.</span></div>
+            <div class="help-item"><strong>Review</strong><span>Browse concise takeaways, correct answers, and references for calm reinforcement.</span></div>
+            <div class="help-item"><strong>Flags</strong><span>Mark questions like High Yield, Weak Area, or Need to Memorize to create focused review pools.</span></div>
+            <div class="help-item"><strong>Backup</strong><span>Export your local progress to JSON before switching devices, then import it later to restore everything.</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Coverage</div>
+              <h2>Performance by Subcategory</h2>
+            </div>
+          </div>
+          <div id="dash-domains" class="domain-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">History</div>
+              <h2>Recent Sessions</h2>
+            </div>
+          </div>
+          <div id="dash-history"></div>
+          <div class="actions">
+            <button class="btn btn-danger" onclick="resetProgress()">Reset Progress</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <div>
+              <div class="section-eyebrow">Backup</div>
+              <h2>Data & Sharing</h2>
+            </div>
+          </div>
+          <p class="inline-note">Everything stays local to this browser unless you export it. Backups are plain JSON files you can keep for yourself or share with another learner.</p>
+          <div class="actions">
+            <button class="btn btn-primary" type="button" id="export-data-btn">Export Progress</button>
+            <button class="btn btn-secondary" type="button" id="import-data-btn">Import Progress</button>
+            <input type="file" id="import-data-file" class="hidden" accept="application/json">
+          </div>
+          <div class="data-feedback" id="data-feedback">Tip: export before making big resets or switching devices.</div>
+          <div class="danger-card">
+            <div class="danger-copy">
+              <div class="danger-title">Reset Local Data</div>
+              <div class="danger-meta">Clears saved progress, sessions, presets, flags, ratings, and theme preferences from this browser only.</div>
+            </div>
+            <button class="btn btn-danger" type="button" id="reset-local-data-btn">Reset Local Data</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <span>Magniscreen Registry Prep v2</span>
+      <span>Local-first MRI registry study platform</span>
+    </footer>
+  </div>
+
+  <div class="overlay hidden" id="settings-overlay"></div>
+  <aside class="settings-panel hidden" id="settings-panel" aria-hidden="true" role="dialog" aria-labelledby="settings-title">
+    <div class="settings-head">
+      <div>
+        <div class="section-eyebrow">Personalization</div>
+        <h2 id="settings-title">Theme & Settings</h2>
+      </div>
+      <button class="icon-btn icon-btn-quiet" type="button" id="settings-close" aria-label="Close settings">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Appearance</h3>
+      <div class="segmented" id="theme-mode-controls">
+        <button type="button" class="segmented-btn" data-theme-mode="light">Light</button>
+        <button type="button" class="segmented-btn" data-theme-mode="dark">Dark</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Accent Color</h3>
+      <div class="accent-grid" id="accent-controls">
+        <button type="button" class="accent-swatch" data-accent="teal"><span></span><strong>Teal</strong></button>
+        <button type="button" class="accent-swatch" data-accent="blue"><span></span><strong>Blue</strong></button>
+        <button type="button" class="accent-swatch" data-accent="emerald"><span></span><strong>Emerald</strong></button>
+        <button type="button" class="accent-swatch" data-accent="rose"><span></span><strong>Rose</strong></button>
+        <button type="button" class="accent-swatch" data-accent="amber"><span></span><strong>Amber</strong></button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Saved Locally</h3>
+      <p>Your appearance preferences stay in this browser alongside your progress data.</p>
+    </div>
+
+    <div class="settings-section">
+      <h3>About</h3>
+      <p>Magniscreen Registry Prep v2 is designed for standalone local study, easy handoff, and low-friction backup and restore.</p>
+    </div>
+  </aside>
+
+  <div class="overlay hidden" id="preset-overlay"></div>
+  <div class="modal hidden" id="preset-modal" aria-hidden="true" role="dialog" aria-labelledby="preset-modal-title">
+    <div class="modal-head">
+      <div>
+        <div class="section-eyebrow">Saved preset</div>
+        <h2 id="preset-modal-title">Save Current Setup</h2>
+      </div>
+      <button class="icon-btn icon-btn-quiet" type="button" id="preset-modal-close" aria-label="Close preset dialog">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="inline-note" id="preset-modal-copy">Save this setup so you can launch it again later from the dashboard.</p>
+      <label class="field">
+        <span>Preset Name</span>
+        <input type="text" id="preset-name-input" maxlength="50" placeholder="Physics Weak Areas">
+      </label>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" id="preset-save-confirm-btn">Save Preset</button>
+        <button class="btn btn-secondary" type="button" id="preset-save-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

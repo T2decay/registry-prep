@@ -689,11 +689,11 @@ function getPoolBySource(source) {
 }
 
 function getFlashcardSourcePool() {
-  return applyDomainSubFilters(getPoolBySource($('flashcard-source').value), activeFlashDomain, activeFlashSub);
+  return applyDomainSubFilters(getPoolBySource('all'), activeFlashDomain, activeFlashSub);
 }
 
 function getReviewSourcePool() {
-  return applyDomainSubFilters(getPoolBySource($('review-source').value), activeReviewDomain, activeReviewSub);
+  return getPoolBySource('flagged');
 }
 
 function describeSource(source) {
@@ -760,7 +760,6 @@ function buildPresetConfig(mode) {
   }
   if (mode === 'flashcards') {
     return {
-      source: $('flashcard-source').value,
       count: $('flashcard-count').value,
       domain: activeFlashDomain,
       subcategory: activeFlashSub,
@@ -769,11 +768,7 @@ function buildPresetConfig(mode) {
   }
   if (mode === 'review') {
     return {
-      source: $('review-source').value,
-      count: $('review-count').value,
-      domain: activeReviewDomain,
-      subcategory: activeReviewSub,
-      shuffle: $('review-shuffle').checked
+      count: $('review-count').value
     };
   }
   return null;
@@ -820,7 +815,6 @@ function applyPreset(preset) {
     $('flashcard-active').classList.add('hidden');
     $('flashcard-summary').classList.add('hidden');
     $('flashcard-setup').classList.remove('hidden');
-    $('flashcard-source').value = preset.config.source || 'all';
     $('flashcard-count').value = preset.config.count || '25';
     $('flashcard-shuffle').checked = preset.config.shuffle !== false;
     activeFlashDomain = preset.config.domain || 'All';
@@ -834,11 +828,7 @@ function applyPreset(preset) {
     $('review-active').classList.add('hidden');
     $('review-summary').classList.add('hidden');
     $('review-setup').classList.remove('hidden');
-    $('review-source').value = preset.config.source || 'filtered';
     $('review-count').value = preset.config.count || '10';
-    $('review-shuffle').checked = preset.config.shuffle === true;
-    activeReviewDomain = preset.config.domain || 'All';
-    activeReviewSub = preset.config.subcategory || 'All';
     updateReviewAvailable();
   }
 }
@@ -1661,7 +1651,7 @@ function buildFlashcardChatGPTUrl(question, phase) {
 }
 
 function updateFlashcardAvailable() {
-  const basePool = getPoolBySource($('flashcard-source').value);
+  const basePool = getPoolBySource('all');
   renderSimpleSelect('flashcard-domain-filter', buildDomainOptions(basePool), activeFlashDomain);
   const validFlashDomain = buildDomainOptions(basePool).some((option) => option.value === activeFlashDomain) ? activeFlashDomain : 'All';
   activeFlashDomain = validFlashDomain;
@@ -1704,22 +1694,21 @@ function renderFlashcardCard() {
 }
 
 function startFlashcards() {
-  const source = $('flashcard-source').value;
   const count = parseInt($('flashcard-count').value, 10);
   const shouldShuffle = $('flashcard-shuffle').checked;
   let deck = [...getFlashcardSourcePool()];
   if (shouldShuffle) deck = shuffle(deck);
   if (count !== 0) deck = deck.slice(0, Math.min(count, deck.length));
   if (!deck.length) {
-    showToast('No flashcards match this source right now.');
+    showToast('No flashcards match your filters right now.');
     return;
   }
   flashcardDeck = deck;
   flashcardIdx = 0;
   flashcardPhase = 'prompt';
-  lastFlashcardSource = source;
+  lastFlashcardSource = 'all';
   $('flashcard-summary').classList.add('hidden');
-  $('flashcard-source-label').textContent = describeSource(source);
+  $('flashcard-source-label').textContent = 'All Questions';
   $('flashcard-setup').classList.add('hidden');
   $('flashcard-active').classList.remove('hidden');
   updateHeroVisibility();
@@ -1727,7 +1716,6 @@ function startFlashcards() {
 }
 
 function restartFlashcards() {
-  $('flashcard-source').value = lastFlashcardSource;
   startFlashcards();
 }
 
@@ -1770,9 +1758,7 @@ function endFlashcards() {
 }
 
 function buildReviewItems(source, count) {
-  const shouldShuffle = $('review-shuffle').checked;
   let pool = [...getReviewSourcePool()];
-  if (shouldShuffle) pool = shuffle(pool);
   const questions = count === 0 ? pool : pool.slice(0, Math.min(count, pool.length));
   return questions.map((question) => ({
     id: question.id,
@@ -1787,19 +1773,9 @@ function buildReviewItems(source, count) {
 }
 
 function updateReviewAvailable() {
-  const basePool = getPoolBySource($('review-source').value);
-  renderSimpleSelect('review-domain-filter', buildDomainOptions(basePool), activeReviewDomain);
-  const validReviewDomain = buildDomainOptions(basePool).some((option) => option.value === activeReviewDomain) ? activeReviewDomain : 'All';
-  activeReviewDomain = validReviewDomain;
-  renderSimpleSelect('review-sub-filter', buildSubOptions(basePool, activeReviewDomain), activeReviewSub);
-  const subValues = buildSubOptions(basePool, activeReviewDomain).map((option) => option.value);
-  if (!subValues.includes(activeReviewSub)) {
-    activeReviewSub = 'All';
-    renderSimpleSelect('review-sub-filter', buildSubOptions(basePool, activeReviewDomain), activeReviewSub);
-  }
-  const count = parseInt($('review-count').value, 10);
   const pool = getReviewSourcePool();
-  $('review-available-count').textContent = `${count === 0 ? pool.length : Math.min(count, pool.length)} review cards ready`;
+  const count = parseInt($('review-count').value, 10);
+  $('review-available-count').textContent = `${count === 0 ? pool.length : Math.min(count, pool.length)} flagged cards ready`;
 }
 
 function renderReviewCard() {
@@ -1821,16 +1797,15 @@ function renderReviewCard() {
 }
 
 function startReview() {
-  const source = $('review-source').value;
   const count = parseInt($('review-count').value, 10);
-  reviewDeck = buildReviewItems(source, count);
+  reviewDeck = buildReviewItems('flagged', count);
   if (!reviewDeck.length) {
-    showToast('No review cards match this source right now.');
+    showToast('No flagged questions to review. Flag questions in Study or Test mode first.');
     return;
   }
   reviewIdx = 0;
   $('review-summary').classList.add('hidden');
-  $('review-source-label').textContent = describeSource(source);
+  $('review-source-label').textContent = 'Flagged';
   $('review-setup').classList.add('hidden');
   $('review-active').classList.remove('hidden');
   updateHeroVisibility();
@@ -1857,10 +1832,10 @@ function markReviewHighYield() {
 }
 
 function endReview() {
-  reviewSessionStats = { total: reviewDeck.length, source: $('review-source').value };
+  reviewSessionStats = { total: reviewDeck.length, source: 'flagged' };
   $('review-summary-stats').innerHTML = `
     <div class="stat-card"><div class="val">${reviewDeck.length}</div><div class="label">Cards</div></div>
-    <div class="stat-card"><div class="val">${describeSource($('review-source').value)}</div><div class="label">Source</div></div>
+    <div class="stat-card"><div class="val">Flagged</div><div class="label">Source</div></div>
   `;
   $('review-summary-insight').textContent = `You reviewed ${reviewDeck.length} concept cards. ${getSuggestedNextAction()}`;
   $('review-active').classList.add('hidden');
@@ -2062,7 +2037,6 @@ function bindStudySupportControls() {
 }
 
 function bindLearningModeControls() {
-  $('flashcard-source').addEventListener('change', updateFlashcardAvailable);
   $('flashcard-count').addEventListener('change', updateFlashcardAvailable);
   $('flashcard-shuffle').addEventListener('change', updateFlashcardAvailable);
   $('flashcard-domain-filter').addEventListener('change', (event) => {
@@ -2093,17 +2067,7 @@ function bindLearningModeControls() {
     });
   });
 
-  $('review-source').addEventListener('change', updateReviewAvailable);
   $('review-count').addEventListener('change', updateReviewAvailable);
-  $('review-domain-filter').addEventListener('change', (event) => {
-    activeReviewDomain = event.target.value;
-    activeReviewSub = 'All';
-    updateReviewAvailable();
-  });
-  $('review-sub-filter').addEventListener('change', (event) => {
-    activeReviewSub = event.target.value;
-    updateReviewAvailable();
-  });
   $('start-review-btn').addEventListener('click', startReview);
   $('save-review-preset-btn').addEventListener('click', () => savePreset('review'));
   $('review-prev-btn').addEventListener('click', () => moveReview(-1));
@@ -2190,13 +2154,11 @@ function bindSettingsControls() {
   });
   $('dash-weak-flashcards-btn').addEventListener('click', () => {
     showView('flashcards');
-    $('flashcard-source').value = 'weak';
     updateFlashcardAvailable();
     startFlashcards();
   });
   $('dash-weak-review-btn').addEventListener('click', () => {
     showView('review');
-    $('review-source').value = 'weak';
     updateReviewAvailable();
     startReview();
   });

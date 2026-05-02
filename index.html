@@ -111,7 +111,9 @@
               <div class="section-eyebrow">Learning mode</div>
               <h2>Study Mode</h2>
             </div>
-            <p>Choose a focus area and answer questions one at a time with immediate rationale feedback.</p>
+          </div>
+          <div class="mode-explainer">
+            <p>Work through questions one at a time with immediate feedback. After each answer, you'll see whether you were right, the correct answer, and a full rationale with references. Filter by domain or subcategory to focus your session, and flag questions you want to revisit later in Review mode.</p>
           </div>
 
           <div class="setup-grid">
@@ -256,7 +258,9 @@
               <div class="section-eyebrow">Timed simulation</div>
               <h2>Test Mode</h2>
             </div>
-            <p>Run a timed exam simulation with no rationales until you submit.</p>
+          </div>
+          <div class="mode-explainer">
+            <p>Simulate real exam conditions with a timed test. No rationales until you submit — just like the ARRT exam. Use the 200-question ARRT Mock Exam for a full-length practice test, or choose a shorter format to check your readiness. Flag questions during the test to come back to before submitting.</p>
           </div>
 
           <div class="control-row control-row-wrap">
@@ -408,21 +412,12 @@
               <div class="section-eyebrow">Active recall</div>
               <h2>Flashcard Mode</h2>
             </div>
-            <p>Build a low-pressure deck from the question bank, your current filters, or your own study signals.</p>
+          </div>
+          <div class="mode-explainer">
+            <p>Test your recall one concept at a time. Each card shows you a question stem first — try to answer before revealing the correct answer and explanation. Use the confidence ratings to track how well you know each topic. Filter by domain or subcategory to focus on specific areas.</p>
           </div>
 
           <div class="focus-grid compact-focus-grid vertical-setup-stack">
-            <label class="field">
-              <span>Deck Source</span>
-              <select id="flashcard-source">
-                <option value="all">All Questions</option>
-                <option value="filtered">Current Study Filters</option>
-                <option value="flagged">Flagged Questions</option>
-                <option value="missed">Missed Questions</option>
-                <option value="weak">Weak Areas</option>
-                <option value="high-yield">High Yield Flagged</option>
-              </select>
-            </label>
             <label class="field">
               <span>Cards</span>
               <select id="flashcard-count">
@@ -536,24 +531,15 @@
         <div id="review-setup" class="card compact-setup-card">
           <div class="section-head">
             <div>
-              <div class="section-eyebrow">Passive study</div>
-              <h2>Quick Review</h2>
+              <div class="section-eyebrow">Flagged material</div>
+              <h2>Review Mode</h2>
             </div>
-            <p>Browse calm, distilled concept cards built from existing question rationales and your local study history.</p>
+          </div>
+          <div class="mode-explainer">
+            <p>Review questions you've flagged during study or test sessions. Each card shows the question, the correct answer, a key takeaway, and the full rationale — no pressure, just reinforcement. Flag questions in Study or Test mode, then come here to revisit them.</p>
           </div>
 
           <div class="focus-grid compact-focus-grid vertical-setup-stack">
-            <label class="field">
-              <span>Review Source</span>
-              <select id="review-source">
-                <option value="filtered">Current Study Filters</option>
-                <option value="flagged">Flagged Questions</option>
-                <option value="missed">Missed Questions</option>
-                <option value="weak">Weak Areas</option>
-                <option value="high-yield">High Yield Flagged</option>
-                <option value="all">All Questions</option>
-              </select>
-            </label>
             <label class="field">
               <span>Cards</span>
               <select id="review-count">
@@ -561,23 +547,8 @@
                 <option value="10" selected>10</option>
                 <option value="20">20</option>
                 <option value="50">50</option>
-                <option value="0">All available</option>
+                <option value="0">All flagged</option>
               </select>
-            </label>
-            <label class="field toggle-field">
-              <span>Deck Options</span>
-              <label class="toggle">
-                <input type="checkbox" id="review-shuffle">
-                <span>Shuffle cards</span>
-              </label>
-            </label>
-            <label class="field">
-              <span>Domain</span>
-              <select id="review-domain-filter"></select>
-            </label>
-            <label class="field">
-              <span>Subcategory</span>
-              <select id="review-sub-filter"></select>
             </label>
           </div>
 
